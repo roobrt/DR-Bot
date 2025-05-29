@@ -15,6 +15,7 @@ keep_alive()
 
 # Discord bot setup
 intents = discord.Intents.default()
+intents.message_content = True #v2
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 announced_tournaments = set()
@@ -43,9 +44,9 @@ async def on_ready():
     print(f"Logged in as {bot.user.name}")
     daily_check.start()
 
-@tasks.loop(time=datetime.time(hour=2, tzinfo=datetime.timezone.utc))  # 14:00 EDT = 18:00 UTC REPLACE WITH YOUR DESIRED TIME
+@tasks.loop(time=datetime.time(hour=3, minute=15, tzinfo=datetime.timezone.utc))  # 14:00 EDT = 18:00 UTC REPLACE WITH YOUR DESIRED TIME
 async def daily_check():
-    print("Running daily tournament check at 18:00 UTC...")
+    print("⏰ Daily check triggered at", datetime.datetime.now(datetime.timezone.utc).isoformat())
 
     for region in ['us-east', 'europe']:
         try:
