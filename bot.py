@@ -39,12 +39,22 @@ def find_hoops_tournament(data):
             return tournament
     return None
 
+@tasks.loop(time=datetime.time(hour=3, minute=50, tzinfo=datetime.timezone.utc))
+async def send_alive_message():
+    print("✅ Sending alive message at 03:50 UTC")
+    await asyncio.sleep(5)  # Optional small delay for safety
+
+    channel = discord.utils.get(bot.get_all_channels(), name='tournament-alerts')
+    if channel:
+        await channel.send("I am alive!")
+
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user.name}")
     daily_check.start()
+    send_alive_message.start()  # Start new loop
 
-@tasks.loop(time=datetime.time(hour=3, minute=15, tzinfo=datetime.timezone.utc))  # 14:00 EDT = 18:00 UTC REPLACE WITH YOUR DESIRED TIME
+@tasks.loop(time=datetime.time(hour=3, minute=50, tzinfo=datetime.timezone.utc))  # 14:00 EDT = 18:00 UTC REPLACE WITH YOUR DESIRED TIME
 async def daily_check():
     print("⏰ Daily check triggered at", datetime.datetime.now(datetime.timezone.utc).isoformat())
 
