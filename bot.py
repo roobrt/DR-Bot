@@ -6,6 +6,7 @@ import os
 import asyncio
 import datetime
 from keep_alive import keep_alive
+from zoneinfo import ZoneInfo 
 
 load_dotenv()
 RAPIDAPI_KEY = os.getenv('RAPIDAPI_KEY')
@@ -39,7 +40,7 @@ def find_hoops_tournament(data):
             return tournament
     return None
 
-@tasks.loop(time=datetime.time(hour=3, minute=50, tzinfo=datetime.timezone.utc))
+@tasks.loop(time=datetime.time(hour=4, minute=30, tzinfo=datetime.timezone.utc))
 async def send_alive_message():
     print("✅ Sending alive message at 03:50 UTC")
     await asyncio.sleep(5)  # Optional small delay for safety
@@ -54,9 +55,9 @@ async def on_ready():
     daily_check.start()
     send_alive_message.start()  # Start new loop
 
-@tasks.loop(time=datetime.time(hour=3, minute=50, tzinfo=datetime.timezone.utc))  # 14:00 EDT = 18:00 UTC REPLACE WITH YOUR DESIRED TIME
+@tasks.loop(time=datetime.time(hour=4, minute=30, tzinfo=datetime.timezone.utc))
 async def daily_check():
-    print("⏰ Daily check triggered at", datetime.datetime.now(datetime.timezone.utc).isoformat())
+    print("⏰ TEST RUN at", datetime.datetime.now(datetime.timezone.utc).isoformat())
 
     for region in ['us-east', 'europe']:
         try:
@@ -64,44 +65,44 @@ async def daily_check():
             tournament = find_hoops_tournament(data)
 
             if tournament:
-                start_str = tournament.get('starts')  # Fix to use 'starts' key
-                
+                start_str = tournament.get('starts')
                 if not start_str:
                     continue
 
                 start_dt = datetime.datetime.fromisoformat(start_str.replace("Z", "+00:00"))
-                
                 now = datetime.datetime.now(datetime.timezone.utc)
-                
-                notify_time = start_dt - datetime.timedelta(hours=1)
-                
-                delay = (notify_time - now).total_seconds()
 
+                time_until_start = (start_dt - now).total_seconds()
 
                 key = f"{tournament.get('mode')}|{region}|{start_dt.isoformat()}"
-                
-                
-                if delay > 0 and delay < 86400 and key not in announced_tournaments:
-                    
-                    announced_tournaments.add(key)
-                    region_display = "US-EAST" if region == 'us-east' else 'EUROPE'
-                    print(f"Scheduled Hoops tournament alert for {region_display} in {delay/60:.1f} minutes.")
-                    bot.loop.create_task(schedule_alert(region_display, start_dt, delay))
-                    
-                else:
-                    print(f"No valid alert scheduled: delay={delay}, already announced={key in announced_tournaments}")
-                    
-                    
-        except Exception as e:
-            print(f"Error fetching tournaments for {region.upper()}: {e}")
 
-async def schedule_alert(region, start_time, delay):
-    await asyncio.sleep(delay)
-    channel = discord.utils.get(bot.get_all_channels(), name='tournament-alerts')
-    if channel:
-        await channel.send(
-            f":alarm_clock: **1 Hour Warning!**\n"
-            f"Hoops Tournament in **{region}** starts at **{start_time.strftime('%H:%M UTC')}**"
-        )
+                # 🔧 Test condition: 15h30m before start time
+                target_seconds = 15 * 3600 + 30 * 60
+                tolerance = 300  # ±5 minutes
+
+                if abs(time_until_start - target_seconds) <= tolerance and key not in announced_tournaments:
+                    announced_tournaments.add(key)
+
+                    if region == 'us-east':
+                        local_time = start_dt.astimezone(ZoneInfo("America/New_York"))
+                        formatted_time = local_time.strftime('%I:%M %p EST')
+                        region_display = "US-EAST"
+                    else:
+                        formatted_time = start_dt.strftime('%H:%M UTC')
+                        region_display = "EUROPE"
+
+                    channel = discord.utils.get(bot.get_all_channels(), name='tournament-alerts')
+                    if channel:
+                        await channel.send(
+                            f"# IN-GAME TOURNAMENT ALERT! :alarm_clock:\n"
+                            f"**Hoops** Tournament in **{region_display}** starts at **{formatted_time}**"
+                        )
+                    else:
+                        print("Channel not found")
+                else:
+                    print(f"[{region}] No match: start in {time_until_start/3600:.2f} hours — not within 15h45m±5min")
+
+        except Exception as e:
+            print(f"Error during daily_check for {region.upper()}: {e}")
 
 bot.run(DISCORD_BOT_TOKEN)
