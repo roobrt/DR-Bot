@@ -1,13 +1,11 @@
 import requests
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 import os
 import asyncio
 import datetime
-
 from keep_alive import keep_alive
-# Start the Flask server to keep the bot alive
 
 load_dotenv()
 RAPIDAPI_KEY = os.getenv('RAPIDAPI_KEY')
@@ -19,51 +17,72 @@ keep_alive()
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+announced_tournaments = set()
+
 def fetch_tournaments(region):
     url = f"https://rocket-league1.p.rapidapi.com/tournaments/{region}"
+    
     headers = {
         "x-rapidapi-key": RAPIDAPI_KEY,
         "x-rapidapi-host": "rocket-league1.p.rapidapi.com",
-        "User-Agent": "DiscordBot",
+        "User-Agent": "RapidAPI Playground",
         "Accept-Encoding": "identity"
     }
+    
     response = requests.get(url, headers=headers)
     return response.json()
 
-def check_for_dropshot(tournament_data):
-    for tournament in tournament_data.get('tournaments', []):
-        if "Dropshot" in tournament.get('mode', ''):
+def find_hoops_tournament(data):
+    for tournament in data.get('tournaments', []):
+        if "hoops" in tournament.get('mode', '').lower():
             return tournament
     return None
 
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user.name}")
+    daily_check.start()
+
+@tasks.loop(time=datetime.time(hour=18, tzinfo=datetime.timezone.utc))  # 14:00 EDT = 18:00 UTC
+async def daily_check():
+    print("Running daily tournament check at 18:00 UTC...")
 
     for region in ['us-east', 'europe']:
-        data = fetch_tournaments(region)
-        dropshot_tournament = check_for_dropshot(data)
+        try:
+            data = fetch_tournaments(region)
+            tournament = find_hoops_tournament(data)
 
-        if dropshot_tournament:
-            start_str = dropshot_tournament.get('start')  # Example: "2025-05-24T05:00:00.000Z"
-            if not start_str:
-                continue
-
-            # Convert ISO timestamp to UTC datetime
-            start_dt = datetime.datetime.fromisoformat(start_str.replace("Z", "+00:00"))
-
-            # Calculate delay until 1 hour before start time
-            now = datetime.datetime.now(datetime.timezone.utc)
-            notify_time = start_dt - datetime.timedelta(hours=1)
-            delay = (notify_time - now).total_seconds()
-
-            # Avoid negative or excessively large sleeps
-            if delay > 0 and delay < 86400:
-                region_display = "US-EAST" if region == 'us-east' else 'EUROPE'
-                print(f"Scheduled Dropshot tournament alert for {region_display} in {delay/60:.1f} minutes.")
+            if tournament:
+                start_str = tournament.get('starts')  # Fix to use 'starts' key
                 
-                # Schedule the notification
-                bot.loop.create_task(schedule_alert(region_display, start_dt, delay))
+                if not start_str:
+                    continue
+
+                start_dt = datetime.datetime.fromisoformat(start_str.replace("Z", "+00:00"))
+                
+                now = datetime.datetime.now(datetime.timezone.utc)
+                
+                notify_time = start_dt - datetime.timedelta(hours=1)
+                
+                delay = (notify_time - now).total_seconds()
+
+
+                key = f"{tournament.get('mode')}|{region}|{start_dt.isoformat()}"
+                
+                
+                if delay > 0 and delay < 86400 and key not in announced_tournaments:
+                    
+                    announced_tournaments.add(key)
+                    region_display = "US-EAST" if region == 'us-east' else 'EUROPE'
+                    print(f"Scheduled Hoops tournament alert for {region_display} in {delay/60:.1f} minutes.")
+                    bot.loop.create_task(schedule_alert(region_display, start_dt, delay))
+                    
+                else:
+                    print(f"No valid alert scheduled: delay={delay}, already announced={key in announced_tournaments}")
+                    
+                    
+        except Exception as e:
+            print(f"Error fetching tournaments for {region.upper()}: {e}")
 
 async def schedule_alert(region, start_time, delay):
     await asyncio.sleep(delay)
@@ -71,7 +90,7 @@ async def schedule_alert(region, start_time, delay):
     if channel:
         await channel.send(
             f":alarm_clock: **1 Hour Warning!**\n"
-            f"Dropshot Tournament in **{region}** starts at **{start_time.strftime('%H:%M UTC')}**"
+            f"Hoops Tournament in **{region}** starts at **{start_time.strftime('%H:%M UTC')}**"
         )
 
 bot.run(DISCORD_BOT_TOKEN)
