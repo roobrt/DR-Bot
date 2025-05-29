@@ -43,7 +43,7 @@ async def on_ready():
     print(f"Logged in as {bot.user.name}")
     daily_check.start()
 
-@tasks.loop(time=datetime.time(hour=1, minute=30, tzinfo=datetime.timezone.utc))  # 14:00 EDT = 18:00 UTC REPLACE WITH YOUR DESIRED TIME
+@tasks.loop(time=datetime.time(hour=2, tzinfo=datetime.timezone.utc))  # 14:00 EDT = 18:00 UTC REPLACE WITH YOUR DESIRED TIME
 async def daily_check():
     print("Running daily tournament check at 18:00 UTC...")
 
