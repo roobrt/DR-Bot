@@ -1,6 +1,7 @@
 # 🎮 DRBot - Dropshot Tournament Discord Notifier
 
-**DR-Bot** is a custom Discord bot made for the [Dropshot Resurgence Discord server](discord.gg/dropshot) that monitors upcoming **Dropshot tournaments** in *Rocket League* using the [Rocket League API on RapidAPI](https://rapidapi.com/rocket-league1/api/rocket-league1). It alerts your Discord server with a scheduled message 1.5 hours before a tournament starts, using Discord’s native timestamp formatting and role pings.
+**DRBot** is a custom Discord bot made for the [Dropshot Resurgence Discord server](discord.gg/dropshot) that monitors upcoming **Dropshot tournaments** in *Rocket League* using the [Rocket League API on RapidAPI](https://rapidapi.com/rocket-league1/api/rocket-league1). 
+It alerts your Discord server with a scheduled message 1.5 hours before a tournament starts, using Discord’s native timestamp formatting and role pings.
 
 --- 
 ## 🚀 Features
@@ -58,7 +59,7 @@ DR-Bot/
 | Europe   | 12:00 UTC        | 13:00-13:30 UTC     | 1.5 hours       |
 
 > [!NOTE]
-> The Rocket League API on RapidAPI only allows 5 calls per 24 hours in their Free Subscription plan.. By checking once every day for two regions, we can limit the calls to 2 per day.
+> The Rocket League API on RapidAPI only allows 5 calls per 24 hours in their Free Subscription plan. By checking once every day for these two regions, we can limit the calls to 2 per day.
 
 ---
 
@@ -126,6 +127,10 @@ Recommended permissions (bitmask 150528):
 - Mention Everyone (to ping roles)
 - Embed Links (could be used in future versions)
 
+> [!NOTE]
+> It is crucial that you make a Discord channel called "#tournament-alerts" and make sure that DRBot has permissions to write in it.
+> If you want to change the name of this channel, you must edit the code.
+
 ---
 
 ### 🚀 5. Run the Bot
@@ -143,16 +148,25 @@ If deployed to a service like Render, ensure:
 - The Start Command is set to:
 
 ```bash
-python bot.py
+$ python3 bot.py
 ```
 
-If using Replit, use the .replit config or "Run" button.
+- Add the following Build Command:
+
+```
+$ pip install -r requirements.txt
+```
+
+- Adding the .env file to Render, so the bot can use your own API keys
+
+> Thank you to [CreepyD](https://www.youtube.com/@CreepyD246) for making a [Youtube video](https://www.youtube.com/watch?v=kBdDmCPcbfs) on how to do this. 
 
 ---
 
-## 🌐 6. Uptime Monitoring (Must do)
+### 🌐 6. Uptime Monitoring (Must do)
 
-Use [UptimeRobot](https://uptimerobot.com/) to ping your bot’s / route (http://your-bot-url.onrender.com/) every 5 minutes. This prevents the host (e.g., Render/Replit) from putting your bot to sleep.
+Use [UptimeRobot](https://uptimerobot.com/) to ping your bot’s / route (http://your-bot-url.onrender.com/) every 5 minutes. 
+This prevents the host (e.g., Render/Replit) from putting your bot to sleep.
 
 ## 🧩 Customization
 
@@ -166,7 +180,6 @@ def find_dropshot_tournament(data):
         if "dropshot" in tournament.get('mode', '').lower():
             return tournament
     return None
-
 ```
 Replace "dropshot" with your desired mode (e.g., "hoops", "rumble", "heatseeker").
 
