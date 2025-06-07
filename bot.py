@@ -19,8 +19,6 @@ intents = discord.Intents.default()
 intents.message_content = True 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-announced_tournaments = set()
-
 def fetch_tournaments(region):
     url = f"https://rocket-league1.p.rapidapi.com/tournaments/{region}"
     
@@ -56,9 +54,6 @@ async def us_east_dropshot_check():
 @tasks.loop(time=datetime.time(hour=12, tzinfo=datetime.timezone.utc))
 async def europe_dropshot_check():
     await check_dropshot_for_region("europe", display_name="EUROPE")
-    
-    
-        
 
 async def check_dropshot_for_region(region: str, display_name: str):
     try:
@@ -74,13 +69,10 @@ async def check_dropshot_for_region(region: str, display_name: str):
             now = datetime.datetime.now(datetime.timezone.utc)
             time_until_start = (start_dt - now).total_seconds()
 
-            key = f"{tournament.get('mode')}|{region}|{start_dt.isoformat()}"
             target_seconds = 5400  # 1 hour and 30 minutes in seconds
             tolerance = 300  # ±5 minutes
 
-            if abs(time_until_start - target_seconds) <= tolerance and key not in announced_tournaments:
-                announced_tournaments.add(key)
-
+            if abs(time_until_start - target_seconds) <= tolerance:
                 unix_timestamp = int(start_dt.timestamp())
                 formatted_time = f"<t:{unix_timestamp}:R>" # Discord's relative time format
 
@@ -93,7 +85,7 @@ async def check_dropshot_for_region(region: str, display_name: str):
                         f"<@&1377509538311176213>"  # Don't forget to give the bot the necessary permissions to mention roles
                     )   
                     print(f"[{region.upper()}] ✅ Alert sent for tournament at {start_dt.isoformat()}")
-                    
+
                 else:
                     print("❌ ERROR: tournament-alerts channel not found")
             else:
@@ -102,4 +94,6 @@ async def check_dropshot_for_region(region: str, display_name: str):
     except Exception as e:
         print(f"Error during check_dropshot_for_region({region}): {e}")
 
+if not DISCORD_BOT_TOKEN:
+    raise ValueError("DISCORD_BOT_TOKEN is not set in the environment variables.")
 bot.run(DISCORD_BOT_TOKEN)
