@@ -40,20 +40,35 @@ def find_dropshot_tournament(data):
             return tournament
     return None
 
+@tasks.loop(minutes=1)
+async def periodic_checks():
+    await us_east_dropshot_check()
+    await europe_dropshot_check()
+
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user.name}")
-    us_east_dropshot_check.start()
-    europe_dropshot_check.start()
-    
+    periodic_checks.start()
 
-@tasks.loop(time=datetime.time(hour=19, tzinfo=datetime.timezone.utc))
 async def us_east_dropshot_check():
-    await check_dropshot_for_region("us-east", display_name="US-EAST")
+    now = datetime.datetime.now(datetime.timezone.utc)
+    # Check window: 18:55–19:05 UTC or 19:25–19:35 UTC (1 hour before both cases)
+    if (now.hour == 18 and now.minute >= 55) or (now.hour == 19 and now.minute <= 5) or \
+       (now.hour == 19 and now.minute >= 25) or (now.hour == 19 and now.minute <= 35):
+        await check_dropshot_for_region("us-east", display_name="US-EAST")
+    else:
+        print("Not in US-EAST check window.")
 
-@tasks.loop(time=datetime.time(hour=12, tzinfo=datetime.timezone.utc))
 async def europe_dropshot_check():
-    await check_dropshot_for_region("europe", display_name="EUROPE")
+    now = datetime.datetime.now(datetime.timezone.utc)
+    # Check window: 11:55–12:05 UTC or 11:25–11:35 UTC (1 hour before both cases)
+    if (now.hour == 11 and now.minute >= 55) or (now.hour == 12 and now.minute <= 5) or \
+       (now.hour == 12 and now.minute >= 25) or (now.hour == 12 and now.minute <= 35):
+        await check_dropshot_for_region("europe", display_name="EUROPE")
+    else:
+        print("Not in EUROPE check window.")
+
+announced_tournaments = set()
 
 async def check_dropshot_for_region(region: str, display_name: str):
     try:
@@ -66,31 +81,27 @@ async def check_dropshot_for_region(region: str, display_name: str):
                 return
 
             start_dt = datetime.datetime.fromisoformat(start_str.replace("Z", "+00:00"))
-            now = datetime.datetime.now(datetime.timezone.utc)
-            time_until_start = (start_dt - now).total_seconds()
+            key = f"{tournament.get('mode')}|{region}|{start_dt.isoformat()}"
 
-            target_seconds = 5400  # 1 hour and 30 minutes in seconds
-            tolerance = 300  # ±5 minutes
-
-            if abs(time_until_start - target_seconds) <= tolerance:
+            if key not in announced_tournaments:
+                announced_tournaments.add(key)
                 unix_timestamp = int(start_dt.timestamp())
                 formatted_time = f"<t:{unix_timestamp}:R>" # Discord's relative time format
 
                 channel = discord.utils.get(bot.get_all_channels(), name='tournament-alerts')
                 if channel:
                     await channel.send(
-                        # Sends a message to the channel with a mention of the role
                         f"# :alarm_clock: **IN-GAME TOURNAMENT ALERT!**\n"
                         f"**Dropshot** Tournament in **{display_name}** starts {formatted_time}\n"
-                        f"<@&1377509538311176213>"  # Don't forget to give the bot the necessary permissions to mention roles
+                        f"<@&1377509538311176213>"
                     )   
                     print(f"[{region.upper()}] ✅ Alert sent for tournament at {start_dt.isoformat()}")
-
                 else:
                     print("❌ ERROR: tournament-alerts channel not found")
             else:
-                print(f"[{region.upper()}] No match: start in {time_until_start/3600:.2f}h — not within ±{tolerance//60}min of target")
-                
+                print(f"[{region.upper()}] Tournament at {start_dt.isoformat()} already announced.")
+        else:
+            print(f"[{region.upper()}] No Dropshot tournament found in API response.")
     except Exception as e:
         print(f"Error during check_dropshot_for_region({region}): {e}")
 
