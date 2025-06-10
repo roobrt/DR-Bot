@@ -50,11 +50,17 @@ async def on_ready():
     print(f"Logged in as {bot.user.name}")
     periodic_checks.start()
 
+@bot.command()
+async def ping(ctx):
+    """Replies with Pong! and the bot's latency in ms."""
+    latency = round(bot.latency * 1000)  # latency is in seconds, convert to ms
+    await ctx.send(f'Pong! ({latency} ms)')
+    
+
 async def us_east_dropshot_check():
     now = datetime.datetime.now(datetime.timezone.utc)
     # Check window: 18:55–19:05 UTC or 19:25–19:35 UTC (1 hour before both cases)
-    if (now.hour == 18 and now.minute >= 55) or (now.hour == 19 and now.minute <= 5) or \
-       (now.hour == 19 and now.minute >= 25) or (now.hour == 19 and now.minute <= 35):
+    if (now.hour == 18 and now.minute >= 55) or (now.hour == 19 and now.minute <= 5):
         await check_dropshot_for_region("us-east", display_name="US-EAST")
     else:
         print("Not in US-EAST check window.")
@@ -62,8 +68,7 @@ async def us_east_dropshot_check():
 async def europe_dropshot_check():
     now = datetime.datetime.now(datetime.timezone.utc)
     # Check window: 11:55–12:05 UTC or 11:25–11:35 UTC (1 hour before both cases)
-    if (now.hour == 11 and now.minute >= 55) or (now.hour == 12 and now.minute <= 5) or \
-       (now.hour == 12 and now.minute >= 25) or (now.hour == 12 and now.minute <= 35):
+    if (now.hour == 11 and now.minute >= 55) or (now.hour == 12 and now.minute <= 5):
         await check_dropshot_for_region("europe", display_name="EUROPE")
     else:
         print("Not in EUROPE check window.")
