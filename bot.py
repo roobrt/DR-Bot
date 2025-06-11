@@ -57,6 +57,26 @@ async def ping(ctx):
     await ctx.send(f'Pong! ({latency} ms)')
     
 
+## AUTO-REACT TO COTW MESSAGES
+@bot.event
+async def on_message(message):
+    if message.channel.id == 1374505428700106863:
+        try:
+            # Get the custom upvote and downvote emoji objects by ID
+            upvote_emoji = message.guild.get_emoji(1374485157808963614)
+            downvote_emoji = message.guild.get_emoji(1374485110048686180)
+            if upvote_emoji:
+                await message.add_reaction(upvote_emoji)
+            else:
+                print("Custom upvote emoji not found.")
+            if downvote_emoji:
+                await message.add_reaction(downvote_emoji)
+            else:
+                print("Custom downvote emoji not found.")
+        except Exception as e:
+            print(f"Failed to add reaction: {e}")
+    await bot.process_commands(message)  # Ensure commands still work
+    
 async def us_east_dropshot_check():
     now = datetime.datetime.now(datetime.timezone.utc)
     # Check window: 18:55–19:05 UTC or 19:25–19:35 UTC (1 hour before both cases)
