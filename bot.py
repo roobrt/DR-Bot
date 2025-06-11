@@ -60,8 +60,9 @@ async def ping(ctx):
 ## AUTO-REACT TO COTW MESSAGES
 @bot.event
 async def on_message(message):
-    if message.channel.id == 1374505428700106863:
-        await asyncio.sleep(3)  # Wait a bit to ensure the message is fully processed
+    # Check by channel name instead of channel ID
+    if message.channel.name == "cotw-submissions":
+        await asyncio.sleep(5)  # Wait a bit to ensure the message is fully processed
         try:
             # Get the custom upvote and downvote emoji objects by ID
             upvote_emoji = message.guild.get_emoji(1374485157808963614)
