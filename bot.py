@@ -40,7 +40,7 @@ def find_dropshot_tournament(data):
             return tournament
     return None
 
-@tasks.loop(minutes=1)
+@tasks.loop(minutes=5)
 async def periodic_checks():
     await us_east_dropshot_check()
     await europe_dropshot_check()
