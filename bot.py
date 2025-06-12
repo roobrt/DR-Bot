@@ -37,7 +37,7 @@ def fetch_tournaments(region):
 
 def find_dropshot_tournament(data):
     for tournament in data.get('tournaments', []):
-        if "dropshot" in tournament.get('mode', '').lower():
+        if "Dropshot" in tournament.get('mode', '').lower():
             return tournament
     return None
 
