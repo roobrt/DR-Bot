@@ -20,6 +20,7 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 def fetch_tournaments(region):
+    print(f"Fetching tournaments for region, inside time range for: {region}")
     url = f"https://rocket-league1.p.rapidapi.com/tournaments/{region}"
     
     
@@ -40,7 +41,7 @@ def find_dropshot_tournament(data):
             return tournament
     return None
 
-@tasks.loop(minutes=5)
+@tasks.loop(minutes=6)
 async def periodic_checks():
     await us_east_dropshot_check()
     await europe_dropshot_check()
@@ -86,7 +87,8 @@ async def us_east_dropshot_check():
         await check_dropshot_for_region("us-east", display_name="US-EAST")
         print("US-EAST check completed")
     else:
-        print("Not in US-EAST check window")
+        # print("Not in US-EAST check window")
+        return
 
 async def europe_dropshot_check():
     now = datetime.datetime.now(datetime.timezone.utc)
@@ -95,7 +97,8 @@ async def europe_dropshot_check():
         await check_dropshot_for_region("europe", display_name="EUROPE")
         print("EUROPE check completed")
     else:
-        print("Not in EUROPE check window")
+        # print("Not in EUROPE check window")
+        return
 
 announced_tournaments = set()
 
