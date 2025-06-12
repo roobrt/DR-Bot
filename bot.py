@@ -71,10 +71,10 @@ async def on_message(message):
                 await message.add_reaction(upvote_emoji)
             else:
                 print("Custom upvote emoji not found.")
-            if downvote_emoji:
+            """ if downvote_emoji: # Commented out to disable downvote reaction
                 await message.add_reaction(downvote_emoji)
             else:
-                print("Custom downvote emoji not found.")
+                print("Custom downvote emoji not found.") """
         except Exception as e:
             print(f"Failed to add reaction: {e}")
     await bot.process_commands(message)  # Ensure commands still work
@@ -84,16 +84,18 @@ async def us_east_dropshot_check():
     # Check window: 18:55–19:05 UTC or 19:25–19:35 UTC (1 hour before both cases)
     if (now.hour == 18 and now.minute >= 55) or (now.hour == 19 and now.minute <= 5):
         await check_dropshot_for_region("us-east", display_name="US-EAST")
+        print("US-EAST check completed")
     else:
-        print("Not in US-EAST check window.")
+        print("Not in US-EAST check window")
 
 async def europe_dropshot_check():
     now = datetime.datetime.now(datetime.timezone.utc)
     # Check window: 11:55–12:05 UTC or 11:25–11:35 UTC (1 hour before both cases)
     if (now.hour == 11 and now.minute >= 55) or (now.hour == 12 and now.minute <= 5):
         await check_dropshot_for_region("europe", display_name="EUROPE")
+        print("EUROPE check completed")
     else:
-        print("Not in EUROPE check window.")
+        print("Not in EUROPE check window")
 
 announced_tournaments = set()
 
