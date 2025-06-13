@@ -120,16 +120,18 @@ async def check_dropshot_for_region(region: str, display_name: str):
                 unix_timestamp = int(start_dt.timestamp())
                 formatted_time = f"<t:{unix_timestamp}:R>" # Discord's relative time format
 
-                channel = discord.utils.get(bot.get_all_channels(), name='tournament-alerts')
-                if channel:
-                    await channel.send(
-                        f"# :alarm_clock: **IN-GAME TOURNAMENT ALERT!**\n"
-                        f"**Dropshot** Tournament in **{display_name}** starts {formatted_time}\n"
-                        f"<@&1377509538311176213>"
-                    )   
-                    print(f"[{region.upper()}] ✅ Alert sent for tournament at {start_dt.isoformat()}")
-                else:
-                    print("❌ ERROR: tournament-alerts channel not found")
+                for guild in bot.guilds:
+                    for channel in guild.text_channels:
+                        if channel.name == 'tournament-alerts':
+                            try:
+                                await channel.send(
+                                    f"# :alarm_clock: **IN-GAME TOURNAMENT ALERT!**\n"
+                                    f"**Dropshot** Tournament in **{display_name}** starts {formatted_time}\n"
+                                    f"<@&1377509538311176213>"
+                                )
+                                print(f"[{region.upper()}] ✅ Alert sent to {guild.name} in #{channel.name} for tournament at {start_dt.isoformat()}")
+                            except Exception as e:
+                                print(f"❌ ERROR sending to {guild.name} in #{channel.name}: {e}")
             else:
                 print(f"[{region.upper()}] Tournament at {start_dt.isoformat()} already announced.")
         else:
